@@ -18,23 +18,49 @@ from dedalus_labs.utils.streaming import stream_async
 
 class LocalTools:
     """local filesystem and bash tools"""
-    
+
+    # jane: agent shell tool keeps shell=True by design (pipes/globs are the
+    # contract); contained by output caps + audit log, not by removing the shell.
+    MAX_OUTPUT_CHARS = 32768
+
     @staticmethod
     def bash(command: str) -> Dict[str, Any]:
         """execute bash command"""
+        if not isinstance(command, str) or not command.strip():
+            return {
+                "success": False,
+                "error": "command must be a non-empty string"
+            }
         try:
             result = subprocess.run(
                 command,
                 shell=True,
+                executable="/bin/bash",
                 capture_output=True,
                 text=True,
                 timeout=30
             )
+            stdout = result.stdout or ""
+            stderr = result.stderr or ""
+            truncated = (
+                len(stdout) > LocalTools.MAX_OUTPUT_CHARS
+                or len(stderr) > LocalTools.MAX_OUTPUT_CHARS
+            )
+            if truncated:
+                stdout = stdout[:LocalTools.MAX_OUTPUT_CHARS]
+                stderr = stderr[:LocalTools.MAX_OUTPUT_CHARS]
+            print(
+                f"[bash] rc={result.returncode} "
+                f"truncated={truncated} cmd={command[:500]}",
+                file=sys.stderr,
+                flush=True
+            )
             return {
                 "success": True,
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-                "returncode": result.returncode
+                "stdout": stdout,
+                "stderr": stderr,
+                "returncode": result.returncode,
+                "truncated": truncated
             }
         except subprocess.TimeoutExpired:
             return {
