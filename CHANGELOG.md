@@ -8,8 +8,11 @@ All notable changes to this fork are documented here. Format follows
 ### Fixed
 - Removed unauthenticated command injection in `files.moveToTrash`
   (osascript shell-out with interpolated input). Trash is now a shell-free
-  `fs.rename` into the platform trash dir; input requires non-empty string.
-  ([#2](https://github.com/satwareAG-ironMike/vibeOS/issues/2))
+  `fs.rename` into the platform trash dir; input requires non-empty string
+  and source paths are confined to the home directory (the router is still
+  unauthenticated until #7, so arbitrary-path moves must stay impossible).
+  Covered by `test-moveToTrash.ts` (negative control: guard regression fails
+  the suite). ([#2](https://github.com/satwareAG-ironMike/vibeOS/issues/2))
 - Hardened the Dedalus agent `bash` tool: non-empty string guard, explicit
   `/bin/bash`, 32k output caps with truncation flag, per-invocation audit log
   with secret redaction. `shell=True` retained by design (agent pipes/globs

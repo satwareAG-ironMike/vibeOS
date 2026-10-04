@@ -75,6 +75,26 @@ export const filesRouter = createTRPCRouter({
         // shell-free trash: rename into the platform trash dir (no child_process).
         const platform = os.platform();
         const homeDir = os.homedir();
+
+        // The router is unauthenticated (see issue #7): scope the source to the
+        // home tree, the same way readFile/getFileInfo scope to os.homedir().
+        // Without this, any caller can move arbitrary files (e.g. ~/.ssh/*)
+        // into the trash. Symlinks are moved as links, not dereferenced, so
+        // the lexical check cannot escape via symlinked targets.
+        const expanded = input.path.startsWith("~")
+          ? input.path.replace(/^~(?=[/\\]|$)/, homeDir)
+          : input.path;
+        const sourcePath = path.resolve(expanded);
+        if (
+          sourcePath === homeDir ||
+          !sourcePath.startsWith(homeDir + path.sep)
+        ) {
+          return {
+            success: false,
+            error: "path must be within the home directory",
+          };
+        }
+
         let trashDir = '';
         if (platform === 'darwin') {
           trashDir = path.join(homeDir, '.Trash');
@@ -105,7 +125,7 @@ export const filesRouter = createTRPCRouter({
           counter++;
         }
 
-        await fs.rename(input.path, destPath);
+        await fs.rename(sourcePath, destPath);
 
         return {
           success: true,
