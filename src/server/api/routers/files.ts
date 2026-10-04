@@ -3,7 +3,6 @@ import { createTRPCRouter, publicProcedure } from "@/server/api/trpc";
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
-import { exec } from "child_process";
 
 export const filesRouter = createTRPCRouter({
   listDirectory: publicProcedure
@@ -68,14 +67,66 @@ export const filesRouter = createTRPCRouter({
   moveToTrash: publicProcedure
     .input(
       z.object({
-        path: z.string(),
+        path: z.string().min(1),
       })
     )
     .mutation(async ({ input }) => {
       try {
-        // use osascript to move to trash (macos native)
-        await exec(`osascript -e 'tell application "Finder" to delete POSIX file "${input.path}"'`);
-        
+        // shell-free trash: rename into the platform trash dir (no child_process).
+        const platform = os.platform();
+        const homeDir = os.homedir();
+
+        // The router is unauthenticated (see issue #7): scope the source to the
+        // home tree, the same way readFile/getFileInfo scope to os.homedir().
+        // Without this, any caller can move arbitrary files (e.g. ~/.ssh/*)
+        // into the trash. Symlinks are moved as links, not dereferenced, so
+        // the lexical check cannot escape via symlinked targets.
+        const expanded = input.path.startsWith("~")
+          ? input.path.replace(/^~(?=[/\\]|$)/, homeDir)
+          : input.path;
+        const sourcePath = path.resolve(expanded);
+        if (
+          sourcePath === homeDir ||
+          !sourcePath.startsWith(homeDir + path.sep)
+        ) {
+          return {
+            success: false,
+            error: "path must be within the home directory",
+          };
+        }
+
+        let trashDir = '';
+        if (platform === 'darwin') {
+          trashDir = path.join(homeDir, '.Trash');
+        } else if (platform === 'linux') {
+          trashDir = path.join(
+            process.env.XDG_DATA_HOME || path.join(homeDir, '.local', 'share'),
+            'Trash',
+            'files'
+          );
+        } else {
+          return {
+            success: false,
+            error: 'move to trash is not supported on this platform',
+          };
+        }
+
+        await fs.mkdir(trashDir, { recursive: true });
+
+        const fileName = path.basename(input.path);
+        const ext = path.extname(fileName);
+        const nameWithoutExt = path.basename(fileName, ext);
+        let destPath = path.join(trashDir, fileName);
+
+        // avoid collisions the same way moveFile does
+        let counter = 1;
+        while (await fs.access(destPath).then(() => true).catch(() => false)) {
+          destPath = path.join(trashDir, `${nameWithoutExt}_${counter}${ext}`);
+          counter++;
+        }
+
+        await fs.rename(sourcePath, destPath);
+
         return {
           success: true,
           message: "moved to trash",

@@ -68,7 +68,7 @@ export const browserUseRouter = router({
         // spawn python process with uvx
         const pythonProcess = spawn(
           "uvx",
-          ["--from", "browser-use==0.13.7", "python", runnerPath],
+          ["--from", "browser-use==0.13.10", "python", runnerPath],
           {
             env: {
               ...process.env,
@@ -164,7 +164,7 @@ export const browserUseRouter = router({
         // spawn python process with uvx
         const pythonProcess = spawn(
           "uvx",
-          ["--from", "browser-use==0.13.7", "python", runnerPath],
+          ["--from", "browser-use==0.13.10", "python", runnerPath],
           {
             env: {
               ...process.env,
