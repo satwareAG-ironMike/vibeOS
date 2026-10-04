@@ -12,6 +12,12 @@ All notable changes to this fork are documented here. Format follows
   write to the upstream-owned `caffeinum/vibeos` package, which made every
   publish fail with `permission_denied`. `org.opencontainers.image.source`
   now points at the fork.
+- The published SBOM is now CycloneDX JSON instead of SPDX JSON, generated
+  with syft 1.54.0 (pinned) and the file-metadata cataloger disabled
+  (`.github/workflows/sbom-syft-config.yaml`): the full image SBOM with
+  39k per-file digests exceeds the 16 MiB cap of the GitHub attestation
+  API, which failed the SBOM attestation step. Package list, hashes, and
+  dependency relationships are unchanged; measured size 8.2 MiB.
 
 ### Fixed
 - Removed unauthenticated command injection in `files.moveToTrash`

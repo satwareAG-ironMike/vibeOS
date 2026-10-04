@@ -1,0 +1,18 @@
+# syft configuration for the GHCR SBOM generation (docker.yml, "generate SBOM"
+# step, passed via the sbom-action `config` input).
+#
+# Why: the full image SBOM of this repo (39k file entries, each with SHA-1 and
+# SHA-256 digests) exceeds the 16 MiB (16777216 byte) cap of the GitHub
+# attestation API - actions/attest-sbom rejects larger files with "SBOM file
+# exceeds maximum allowed size". `selection: none` tells the file-metadata
+# cataloger to capture no files at all: all package-level entries (name,
+# version, hashes), the OS component, and the dependency relationships stay
+# in the SBOM; only the file-level digest evidence is dropped.
+#
+# Measured on image digest sha256:745c85e3 (2026-10-04): CycloneDX with
+# selection "none" = 8.2 MiB (fits, 2x headroom); the same scan without this
+# config = 19.6 MB (fails). SPDX-JSON stays >16 MiB even with this config,
+# so the workflow uses the CycloneDX format.
+file:
+  metadata:
+    selection: 'none'
