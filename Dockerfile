@@ -4,7 +4,7 @@ FROM oven/bun:1.3.14-debian
 
 # OCI metadata. `image.source` is what links the GHCR package back to this
 # repo -- without it the published package page shows no source at all.
-LABEL org.opencontainers.image.source="https://github.com/caffeinum/vibeOS" \
+LABEL org.opencontainers.image.source="https://github.com/satwareAG-ironMike/vibeOS" \
       org.opencontainers.image.url="https://vibeos.sh/?ref=ghcr" \
       org.opencontainers.image.title="vibeOS" \
       org.opencontainers.image.description="an open source AI-native desktop -- every window written on demand" \
