@@ -254,9 +254,10 @@ jobs:
           # the full image SBOM (39k file entries with per-file digests) exceeds
           # the 16 MiB cap of the attestation API; the syft config drops
           # file-level metadata - see sbom-syft-config.yaml
-          config: .github/workflows/sbom-syft-config.yaml
+          config: .github/sbom-syft-config.yaml
           # pin the scanner version so the SBOM is reproducible run-to-run
-          syft-version: 1.54.0
+          # (the action's installer needs the release-tag form: v1.54.0, not 1.54.0)
+          syft-version: v1.54.0
 
       - name: attest SBOM
         uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
