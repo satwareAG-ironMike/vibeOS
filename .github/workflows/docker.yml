@@ -249,15 +249,21 @@ jobs:
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
           image: ghcr.io/satwareag-ironmike/vibeos@${{ steps.build.outputs.digest }}
-          format: spdx-json
-          output-file: sbom.spdx.json
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          # the full image SBOM (39k file entries with per-file digests) exceeds
+          # the 16 MiB cap of the attestation API; the syft config drops
+          # file-level metadata - see sbom-syft-config.yaml
+          config: .github/workflows/sbom-syft-config.yaml
+          # pin the scanner version so the SBOM is reproducible run-to-run
+          syft-version: 1.54.0
 
       - name: attest SBOM
         uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
         with:
           subject-name: ghcr.io/satwareag-ironmike/vibeos
           subject-digest: ${{ steps.build.outputs.digest }}
-          sbom-path: sbom.spdx.json
+          sbom-path: sbom.cdx.json
           push-to-registry: true
 
       - name: attest build provenance
