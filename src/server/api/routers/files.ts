@@ -94,13 +94,13 @@ export const filesRouter = createTRPCRouter({
         await fs.mkdir(trashDir, { recursive: true });
 
         const fileName = path.basename(input.path);
+        const ext = path.extname(fileName);
+        const nameWithoutExt = path.basename(fileName, ext);
         let destPath = path.join(trashDir, fileName);
 
         // avoid collisions the same way moveFile does
         let counter = 1;
         while (await fs.access(destPath).then(() => true).catch(() => false)) {
-          const ext = path.extname(fileName);
-          const nameWithoutExt = path.basename(fileName, ext);
           destPath = path.join(trashDir, `${nameWithoutExt}_${counter}${ext}`);
           counter++;
         }

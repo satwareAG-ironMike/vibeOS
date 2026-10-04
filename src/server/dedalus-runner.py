@@ -7,6 +7,7 @@ spawnable from node.js with streaming support
 import asyncio
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -22,6 +23,18 @@ class LocalTools:
     # jane: agent shell tool keeps shell=True by design (pipes/globs are the
     # contract); contained by output caps + audit log, not by removing the shell.
     MAX_OUTPUT_CHARS = 32768
+
+    # jane: audit log must not become a secret sink (agent commands embed keys).
+    _LOG_SECRET_RE = re.compile(
+        r"(sk-[A-Za-z0-9-_]{6,}|Bearer\s+[A-Za-z0-9\-._~+/=]+|"
+        r"api_?key\s*[:=]\s*\S+|token\s*[:=]\s*\S+)",
+        re.IGNORECASE,
+    )
+
+    @staticmethod
+    def _redact_for_log(command: str) -> str:
+        """mask key-shaped values before a command hits the logs"""
+        return LocalTools._LOG_SECRET_RE.sub("[redacted]", command[:500])
 
     @staticmethod
     def bash(command: str) -> Dict[str, Any]:
@@ -51,7 +64,8 @@ class LocalTools:
                 stderr = stderr[:LocalTools.MAX_OUTPUT_CHARS]
             print(
                 f"[bash] rc={result.returncode} "
-                f"truncated={truncated} cmd={command[:500]}",
+                f"truncated={truncated} "
+                f"cmd={LocalTools._redact_for_log(command)}",
                 file=sys.stderr,
                 flush=True
             )

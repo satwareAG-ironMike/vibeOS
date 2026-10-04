@@ -2,6 +2,9 @@
   "name": "vibe-os",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "ai": "^5.0.271"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
