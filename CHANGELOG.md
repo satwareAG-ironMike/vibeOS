@@ -5,6 +5,14 @@ All notable changes to this fork are documented here. Format follows
 
 ## [Unreleased]
 
+### Changed
+- GHCR publish now targets the fork's own package
+  `ghcr.io/satwareag-ironmike/vibeos`. The fork is the canonical project
+  (all builds/tests/dev happen here) and the fork's `GITHUB_TOKEN` cannot
+  write to the upstream-owned `caffeinum/vibeos` package, which made every
+  publish fail with `permission_denied`. `org.opencontainers.image.source`
+  now points at the fork.
+
 ### Fixed
 - Removed unauthenticated command injection in `files.moveToTrash`
   (osascript shell-out with interpolated input). Trash is now a shell-free
